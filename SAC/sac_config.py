@@ -52,15 +52,15 @@ class SACConfig:
     # SAC Hyperparameters
     GAMMA = 0.99              # Discount factor (higher for long-term planning)
     TAU = 0.005               # Target network soft update rate
-    ACTOR_LR = 3e-4           # Actor learning rate
-    CRITIC_LR = 3e-4          # Critic learning rate
+    ACTOR_LR = 3e-4           # Actor learning rate (balanced)
+    CRITIC_LR = 3e-4          # Critic learning rate (balanced)
     ALPHA_LR = 3e-4           # Entropy temperature learning rate
     INITIAL_ALPHA = 0.2       # Initial entropy temperature
     AUTO_ENTROPY = True       # Automatic entropy tuning
     TARGET_ENTROPY = -ACTION_DIM  # Target entropy = -action_dim
     
-    # Action scaling (reduce from 10% to 5% for more stable learning)
-    ACTION_SCALE = 0.05       # Charge/discharge rate as fraction of capacity per step
+    # Action scaling (realistic for stable optimization)
+    ACTION_SCALE = 0.06       # Charge/discharge rate as fraction of capacity per step
     
     # Reward shaping weights
     USE_REWARD_SHAPING = True  # Enable improved reward function
@@ -72,8 +72,8 @@ class SACConfig:
     ACTIVATION = 'relu'       # Activation function
     
     # Training Parameters
-    BATCH_SIZE = 256          # Batch size for training
-    BUFFER_SIZE = 200_000     # Replay buffer size
+    BATCH_SIZE = 256          # Batch size for training (balanced)
+    BUFFER_SIZE = 300_000     # Replay buffer size (increased but realistic)
     WARMUP_STEPS = 1000       # Random exploration steps before training
     TRAIN_FREQ = 1            # Update frequency (steps)
     GRADIENT_STEPS = 1        # Number of gradient steps per update
@@ -81,9 +81,9 @@ class SACConfig:
     # Training Schedule
     # Allow overriding via environment variable `SAC_EPISODES` for quick runs
     try:
-        TOTAL_EPISODES = int(os.environ.get('SAC_EPISODES', 1000))
+        TOTAL_EPISODES = int(os.environ.get("SAC_EPISODES", 500))
     except Exception:
-        TOTAL_EPISODES = 1000     # Extended training for better convergence
+        TOTAL_EPISODES = 500     # More episodes for better convergence
     MAX_STEPS_PER_EPISODE = 24  # 24 hourly time slots per day
     EVAL_FREQ = 25            # Evaluate every 25 episodes
     SAVE_FREQ = 100           # Model save frequency (episodes)

@@ -413,16 +413,8 @@ class MicrogridEnv(gym.Env):
         # Total cost
         total_cost = net_energy_cost + constraint_penalty
         
-        # Shaped reward (normalized to reasonable scale)
-        # Main objective: minimize cost
-        # Bonuses: encourage good behavior
-        reward = (
-            -net_energy_cost / 1000.0  # Scale down main cost (now in [-5, 0] range)
-            + self_sufficiency_bonus / 100.0  # [0, 1]
-            + ess_utilization_bonus / 10.0  # [0, 3]
-            + price_responsiveness_bonus / 100.0  # [0, ~2]
-            - constraint_penalty / 1000.0  # Large penalty for violations
-        )
+        # Original reward: negative cost (lower cost = higher reward)
+        reward = -total_cost / 1000.0  # Scale to ~-90 range
         
         cost_breakdown = {
             'total_cost': total_cost,

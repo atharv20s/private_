@@ -114,20 +114,28 @@ def train_sac():
             avg_cost = np.mean(episode_costs[-10:])
             alpha_val = agent.alpha.item() if hasattr(agent.alpha, 'item') else agent.alpha
             
+            # Calculate % profit vs baseline (no control = $90,692)
+            baseline_cost = 90692.0
+            profit_pct = ((baseline_cost - episode_cost) / baseline_cost) * 100
+            
             print(f"Episode {episode+1}/{config.TOTAL_EPISODES} | "
                   f"Steps: {episode_steps} | "
                   f"Reward: {episode_reward:.2f} | "
                   f"Avg Reward (10): {avg_reward:.2f} | "
                   f"Cost: {episode_cost:.2f} | "
+                  f"Profit: {profit_pct:+.2f}% | "
                   f"Alpha: {alpha_val:.4f}")
         
         # Evaluation
         if (episode + 1) % config.EVAL_FREQ == 0:
             eval_reward, eval_cost = evaluate_agent(agent, env, num_episodes=5)
+            baseline_cost = 90692.0
+            eval_profit_pct = ((baseline_cost - eval_cost) / baseline_cost) * 100
             print(f"\n{'='*60}")
             print(f"Evaluation after Episode {episode+1}")
             print(f"Avg Evaluation Reward: {eval_reward:.2f}")
             print(f"Avg Evaluation Cost: {eval_cost:.2f}")
+            print(f"Avg Profit: {eval_profit_pct:+.2f}%")
             print(f"{'='*60}\n")
         
         # Save model

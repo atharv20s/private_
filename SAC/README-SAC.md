@@ -1,4 +1,4 @@
-# Installation and Usage Guide for SAC Implementation
+# Installation and Usage Guide for SAC and TD3
 
 ## Installation Requirements
 
@@ -27,8 +27,12 @@ D:\IIITN\PhD\Reinforcement_Learning_implementation\
 ├── sac_config.py                 # SAC configuration (NEW)
 ├── sac_agent.py                  # SAC algorithm implementation (NEW)
 ├── microgrid_env.py              # Gym environment wrapper (NEW)
-├── sac_main.py                   # Main training script (NEW)
+├── sac_main.py                   # SAC training script (NEW)
 ├── evaluate_sac.py               # Evaluation script (NEW)
+├── TD3/                          # Separate TD3 pipeline (NEW)
+│   ├── td3_config.py             # TD3 configuration
+│   ├── td3_agent.py              # TD3 algorithm implementation
+│   └── td3_main.py               # TD3 training script
 │
 ├── logs/                         # Training logs (auto-created)
 └── models/                       # Saved models (auto-created)
@@ -36,7 +40,7 @@ D:\IIITN\PhD\Reinforcement_Learning_implementation\
 
 ## Quick Start
 
-### Step 1: Basic Training
+### Step 1: Basic Training (SAC)
 
 ```bash
 python sac_main.py
@@ -47,6 +51,14 @@ This will:
 - Save models every 100 episodes
 - Evaluate every 50 episodes
 - Generate training curves
+
+### Step 1b: Basic Training (TD3)
+
+```bash
+python TD3/td3_main.py
+```
+
+This trains a TD3 agent with delayed policy updates, saves checkpoints under `./models/td3_microgrid`, and writes curves to `./logs/td3_microgrid`.
 
 ### Step 2: Adjust Hyperparameters (Optional)
 
@@ -61,6 +73,8 @@ BATCH_SIZE = 128
 BATCH_SIZE = 512
 BUFFER_SIZE = 500_000
 ```
+
+For TD3-specific tuning (noise scales, policy update frequency, warmup length), edit `TD3/td3_config.py`.
 
 ### Step 3: Evaluate Trained Model
 
@@ -92,6 +106,32 @@ for step in range(24):
     total_reward += reward
     state = next_state
     
+    if done:
+        break
+
+print(f"\nTotal Episode Reward: {total_reward:.2f}")
+```
+
+### Evaluate TD3
+
+```python
+from TD3.td3_config import TD3Config
+from TD3.td3_agent import TD3Agent
+from SAC.microgrid_env import MicrogridEnv
+
+config = TD3Config()
+env = MicrogridEnv(config.DATA_PATH, config)
+agent = TD3Agent(config)
+agent.load('./models/td3_microgrid/td3_final.pt')
+
+state, _ = env.reset()
+total_reward = 0
+
+for step in range(24):
+    action = agent.select_action(state, noise=0.0)
+    next_state, reward, done, _, info = env.step(action)
+    total_reward += reward
+    state = next_state
     if done:
         break
 

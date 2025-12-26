@@ -5,18 +5,20 @@ import pandas as pd
 import numpy as np
 import os
 
-def plot_learning_curves(log_dir='./logs/sac_microgrid'):
-    """Create comprehensive visualization of training progress"""
-    
-    # Try to find the latest training curves image
-    training_images = [f for f in os.listdir(log_dir) if f.startswith('training_curves_') and f.endswith('.png')]
-    
+def plot_learning_curves(log_dir='./logs/sac_microgrid', prefix='training_curves_', label='SAC'):
+    """Create visualization of training progress for a given algorithm."""
+
+    training_images = [
+        f for f in os.listdir(log_dir)
+        if f.startswith(prefix) and f.endswith('.png')
+    ]
+
     if not training_images:
-        print("No training curves found. Training may still be in progress.")
+        print(f"No training curves found in {log_dir}. Training may still be in progress.")
         return
-    
+
     latest_image = sorted(training_images)[-1]
-    print(f"Latest training curves: {os.path.join(log_dir, latest_image)}")
+    print(f"Latest {label} training curves: {os.path.join(log_dir, latest_image)}")
     
     # Load baseline comparison
     baseline_file = './logs/baseline_comparison.csv'
@@ -42,31 +44,38 @@ def plot_learning_curves(log_dir='./logs/sac_microgrid'):
         theoretical_min = 89274
         no_action = 90692
 
-def analyze_hourly_performance(model_path='./models/sac_microgrid/sac_final.pt'):
-    """Analyze which hours the agent performs well/poorly"""
-    from sac_config import SACConfig
-    from sac_agent import SACAgent
+def analyze_hourly_performance(
+    model_path='./models/sac_microgrid/sac_final.pt',
+    config_cls=None,
+    agent_cls=None,
+    label='SAC'
+):
+    """Analyze hourly performance for a trained agent."""
+
+    if config_cls is None:
+        from sac_config import SACConfig as config_cls  # type: ignore
+    if agent_cls is None:
+        from sac_agent import SACAgent as agent_cls  # type: ignore
     from microgrid_env import MicrogridEnv
-    import torch
-    
+
     if not os.path.exists(model_path):
         print(f"Model not found: {model_path}")
         print("Training may still be in progress.")
         return
-    
+
     print("\n" + "="*80)
-    print("HOURLY PERFORMANCE ANALYSIS")
+    print(f"HOURLY PERFORMANCE ANALYSIS ({label})")
     print("="*80)
-    
-    config = SACConfig()
+
+    config = config_cls()
     env = MicrogridEnv(config.DATA_PATH, config)
-    agent = SACAgent(config)
-    
+    agent = agent_cls(config)
+
     try:
         agent.load(model_path)
         print(f"✓ Loaded model: {model_path}")
-    except:
-        print(f"✗ Could not load model")
+    except Exception:
+        print("✗ Could not load model")
         return
     
     # Run one episode and track hourly costs
@@ -167,26 +176,31 @@ def analyze_hourly_performance(model_path='./models/sac_microgrid/sac_final.pt')
     print(f"✓ Hourly analysis plot saved to ./logs/hourly_analysis.png")
     plt.close()
 
-def compare_with_baseline_detailed():
-    """Compare SAC with baseline policies hour-by-hour"""
-    from sac_config import SACConfig
-    from sac_agent import SACAgent
+def compare_with_baseline_detailed(
+    model_path='./models/sac_microgrid/sac_final.pt',
+    config_cls=None,
+    agent_cls=None,
+    label='SAC'
+):
+    """Compare an RL agent with baseline policies hour-by-hour."""
+    if config_cls is None:
+        from sac_config import SACConfig as config_cls  # type: ignore
+    if agent_cls is None:
+        from sac_agent import SACAgent as agent_cls  # type: ignore
     from microgrid_env import MicrogridEnv
-    
+
     print("\n" + "="*80)
-    print("DETAILED SAC vs BASELINE COMPARISON")
+    print(f"DETAILED {label} vs BASELINE COMPARISON")
     print("="*80)
-    
-    config = SACConfig()
+
+    config = config_cls()
     env = MicrogridEnv(config.DATA_PATH, config)
-    
-    # Test SAC
-    model_path = './models/sac_microgrid/sac_final.pt'
+
     if not os.path.exists(model_path):
         print("Final model not found. Training may still be in progress.")
         return
-    
-    agent = SACAgent(config)
+
+    agent = agent_cls(config)
     agent.load(model_path)
     
     # Get SAC cost
@@ -252,16 +266,11 @@ if __name__ == "__main__":
     print("="*80)
     print("SAC TRAINING ANALYSIS & VISUALIZATION")
     print("="*80)
-    
-    # 1. Show learning curves
+
     plot_learning_curves()
-    
-    # 2. Analyze hourly performance
     analyze_hourly_performance()
-    
-    # 3. Detailed comparison
     compare_with_baseline_detailed()
-    
+
     print("\n" + "="*80)
     print("ANALYSIS COMPLETE")
     print("="*80)
