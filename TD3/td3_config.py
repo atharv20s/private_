@@ -13,15 +13,18 @@ from SAC.sac_config import SACConfig
 class TD3Config(SACConfig):
     """Configuration for TD3 algorithm on the microgrid environment."""
 
-    ACTOR_LR = 3e-4           # Balanced learning
-    CRITIC_LR = 3e-4          # Balanced learning
+    # Reduced actor LR to prevent oscillation - key fix for stability
+    ACTOR_LR = 1e-4           # Reduced from 3e-4 to prevent overshooting
+    CRITIC_LR = 3e-4          # Keep critic LR higher for faster value learning
 
     GAMMA = 0.99              # Standard discount
-    TAU = 0.005               # Standard soft update
-    POLICY_NOISE = 0.2        # Balanced exploration
-    NOISE_CLIP = 0.5          # Standard clipping
-    POLICY_FREQ = 2
-    ACTION_NOISE = 0.1        # Balanced exploration
+    TAU = 0.005               # Standard soft update (conservative)
+    
+    # Noise parameters - carefully tuned to reduce oscillation
+    POLICY_NOISE = 0.1        # Reduced from 0.2 - smoother exploration
+    NOISE_CLIP = 0.3          # Reduced from 0.5 - limit extreme actions
+    POLICY_FREQ = 3           # Increased from 2 - delay actor updates more
+    ACTION_NOISE = 0.05       # Reduced from 0.1 - less exploration noise during rollout
 
     try:
         TOTAL_EPISODES = int(os.environ.get("TD3_EPISODES", 500))

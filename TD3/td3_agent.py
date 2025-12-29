@@ -94,14 +94,16 @@ class TD3Agent:
         self.critic_target = Critic(config.STATE_DIM, config.ACTION_DIM, config.HIDDEN_DIM).to(self.device)
         self.critic_target.load_state_dict(self.critic.state_dict())
 
-        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=config.ACTOR_LR)
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=config.CRITIC_LR)
+        # Lower weight decay helps stabilize actor training
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=config.ACTOR_LR, weight_decay=1e-5)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=config.CRITIC_LR, weight_decay=1e-5)
 
         self.replay_buffer = ReplayBuffer(config.STATE_DIM, config.ACTION_DIM, config.BUFFER_SIZE)
         self.total_steps = 0
         self.total_updates = 0
         self.actor_losses = []
         self.critic_losses = []
+        self.gradient_steps = 0  # Track updates for potential LR scheduling
 
     def select_action(self, state, noise=0.0):
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
@@ -138,8 +140,8 @@ class TD3Agent:
 
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
-        # Gradient clipping for stability
-        nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1.0)
+        # Stronger gradient clipping for stability - prevents large weight updates
+        nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=0.5)
         self.critic_optimizer.step()
 
         actor_loss_val = None
@@ -147,8 +149,8 @@ class TD3Agent:
             actor_loss = -self.critic.q1(states, self.actor(states)).mean()
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
-            # Gradient clipping for stability
-            nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0)
+            # Stronger gradient clipping for actor to prevent divergence
+            nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=0.3)
             self.actor_optimizer.step()
             actor_loss_val = actor_loss.item()
 
